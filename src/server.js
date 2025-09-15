@@ -68,7 +68,10 @@ io.on('connection', (socket) => {
 
   socket.on('add-song', async (song) => {
     if (!song || !song.id || !song.title) return;
-    const video = await findVideo(song.title, song.artist);
+
+    // Pass duration to findVideo for more accurate matching
+    const video = await findVideo(song.title, song.artist, song.duration_ms);
+
     const songWithVideo = { ...song, videoId: video ? video.id : null, timestamp: Date.now() };
     queue.push(songWithVideo);
     if (!currentlyPlaying) playNextSong();
