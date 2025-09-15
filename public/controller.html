@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Добавить песню</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <div class="container" id="controller-container">
+        <h1>Добавить песню в очередь</h1>
+
+        <div id="nickname-section">
+            <input type="text" id="nickname-input" placeholder="Введите ваш никнейм" autocomplete="off">
+            <button id="nickname-submit">Войти</button>
+        </div>
+
+        <div id="search-section" class="hidden">
+            <p>Вы вошли как <b id="nickname-display"></b>.</p>
+            <input type="search" id="search-input" placeholder="Поиск по названию или исполнителю..." autocomplete="off">
+            <div id="search-results">
+                <!-- Search results will be injected here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- This script is served automatically by the Socket.IO server -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/controller.js"></script>
+</body>
+</html>

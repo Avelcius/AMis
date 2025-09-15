@@ -1,0 +1,97 @@
+require('dotenv').config();
+const express = require('express');
+const http = require('http');
+const path = require('path');
+const { Server } = require("socket.io");
+const { searchTracks } = require('./spotify');
+const { findVideo } = require('./youtube');
+
+const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: { origin: "*" }
+});
+
+const PORT = process.env.PORT || 3000;
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'password';
+
+// --- In-memory data store ---
+let currentlyPlaying = null;
+let queue = [];
+
+// --- Core Functions ---
+const broadcastQueueUpdate = () => {
+  io.emit('queue-updated', { queue, currentlyPlaying });
+};
+
+const playNextSong = () => {
+    if (queue.length > 0) {
+        currentlyPlaying = queue.shift();
+    } else {
+        currentlyPlaying = null;
+    }
+    broadcastQueueUpdate();
+};
+
+// --- Middleware & Routes ---
+app.use(express.static('public'));
+app.use(express.json());
+
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'controller.html')));
+app.get('/display', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'display.html')));
+app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'admin.html')));
+
+app.post('/admin/auth', (req, res) => {
+    const { password } = req.body;
+    if (password === ADMIN_PASSWORD) {
+        res.status(200).json({ success: true });
+    } else {
+        res.status(401).json({ success: false });
+    }
+});
+
+app.get('/search', async (req, res) => {
+  const query = req.query.q;
+  if (!query) return res.status(400).send({ error: 'Query "q" is required.' });
+  try {
+    const tracks = await searchTracks(query);
+    res.json(tracks);
+  } catch (error) {
+    res.status(500).send({ error: 'Failed to search tracks.' });
+  }
+});
+
+// --- Socket.IO Logic ---
+io.on('connection', (socket) => {
+  console.log('A user connected:', socket.id);
+  socket.emit('queue-updated', { queue, currentlyPlaying });
+
+  socket.on('add-song', async (song) => {
+    if (!song || !song.id || !song.title) return;
+    const video = await findVideo(song.title, song.artist);
+    const songWithVideo = { ...song, videoId: video ? video.id : null, timestamp: Date.now() };
+    queue.push(songWithVideo);
+    if (!currentlyPlaying) playNextSong();
+    else broadcastQueueUpdate();
+  });
+
+  socket.on('song-ended', playNextSong);
+
+  // Admin controls
+  socket.on('admin-skip-song', playNextSong);
+  socket.on('admin-remove-song', (songTimestamp) => {
+    queue = queue.filter(s => s.timestamp !== songTimestamp);
+    broadcastQueueUpdate();
+  });
+  socket.on('admin-toggle-pause', () => {
+    io.emit('player-control', { action: 'togglePause' });
+  });
+
+  socket.on('disconnect', () => console.log('User disconnected:', socket.id));
+});
+
+// --- Server Startup ---
+server.listen(PORT, () => {
+  console.log(`Server listening on http://localhost:${PORT}`);
+  searchTracks('initial call to get token');
+});
