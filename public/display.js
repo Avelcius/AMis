@@ -46,7 +46,12 @@ document.addEventListener('DOMContentLoaded', () => {
         player = new YT.Player('player', {
             height: '195',
             width: '320',
-            playerVars: { 'autoplay': 1, 'controls': 0, 'origin': window.location.origin },
+            playerVars: {
+                'autoplay': 1,
+                'controls': 0,
+                'origin': window.location.origin,
+                'enablejsapi': 1
+            },
             events: {
                 'onReady': onPlayerReady,
                 'onStateChange': onPlayerStateChange
