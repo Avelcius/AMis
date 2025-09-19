@@ -14,10 +14,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const totalTimeEl = document.getElementById('total-time');
     const visualizerCanvas = document.getElementById('visualizer-canvas');
 
+    // --- State Variables ---
     const placeholderCover = 'https://via.placeholder.com/300/121212/808080?text=+';
     let player;
     let progressTimer;
     let currentVideoId = null;
+    let isPlayerReady = false;
+    let pendingData = null; // To hold data that arrives before player is ready
     const colorThief = new ColorThief();
 
     // --- Dynamic Background ---
@@ -28,7 +31,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         try {
             const dominantColor = colorThief.getColor(coverArtEl);
-            // Make it darker for a background effect
             const bgColor = `rgb(${dominantColor[0] * 0.4}, ${dominantColor[1] * 0.4}, ${dominantColor[2] * 0.4})`;
             visualizerCanvas.style.backgroundColor = bgColor;
         } catch (e) {
@@ -46,15 +48,30 @@ document.addEventListener('DOMContentLoaded', () => {
             width: '320',
             playerVars: { 'autoplay': 1, 'controls': 0, 'origin': window.location.origin },
             events: {
-                'onStateChange': (event) => {
-                    if (event.data === YT.PlayerState.ENDED) {
-                        currentVideoId = null;
-                        socket.emit('song-ended');
-                    }
-                }
+                'onReady': onPlayerReady,
+                'onStateChange': onPlayerStateChange
             }
         });
     };
+
+    function onPlayerReady(event) {
+        console.log("YouTube Player is ready.");
+        isPlayerReady = true;
+        // If a song was received before the player was ready, play it now.
+        if (pendingData) {
+            console.log("Playing pending song.");
+            updateNowPlaying(pendingData.currentlyPlaying);
+            updateQueue(pendingData.queue);
+            pendingData = null;
+        }
+    }
+
+    function onPlayerStateChange(event) {
+        if (event.data === YT.PlayerState.ENDED) {
+            currentVideoId = null;
+            socket.emit('song-ended');
+        }
+    }
 
     // --- Progress Bar & Time Formatting ---
     const formatTime = (seconds) => {
@@ -93,7 +110,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 currentVideoId = song.videoId;
                 titleEl.textContent = song.title;
                 artistEl.textContent = song.artist;
-                // Set crossOrigin to handle tainted canvas errors with ColorThief
                 coverArtEl.crossOrigin = "Anonymous";
                 coverArtEl.src = song.coverArt || placeholderCover;
                 player.loadVideoById(song.videoId);
@@ -106,7 +122,7 @@ document.addEventListener('DOMContentLoaded', () => {
             artistEl.textContent = 'Добавьте песню с вашего устройства';
             addedByEl.textContent = '';
             coverArtEl.src = placeholderCover;
-            updateBackgroundColor(); // Reset to default
+            updateBackgroundColor();
             if (player && typeof player.stopVideo === 'function') {
                 player.stopVideo();
             }
@@ -128,13 +144,20 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // --- Socket.IO Event Handlers ---
-    socket.on('queue-updated', ({ queue, currentlyPlaying }) => {
-        updateNowPlaying(currentlyPlaying);
-        updateQueue(queue);
+    socket.on('queue-updated', (data) => {
+        if (!isPlayerReady) {
+            console.log("Player not ready, queueing data.");
+            pendingData = data;
+            // Still update the queue list visually even if the player isn't ready
+            updateQueue(data.queue);
+        } else {
+            updateNowPlaying(data.currentlyPlaying);
+            updateQueue(data.queue);
+        }
     });
 
     socket.on('player-control', ({ action }) => {
-        if (!player || typeof player.getPlayerState !== 'function') return;
+        if (!player || !isPlayerReady) return;
         if (action === 'togglePause') {
             const state = player.getPlayerState();
             if (state === YT.PlayerState.PLAYING) player.pauseVideo();
@@ -143,7 +166,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     socket.on('player-set-volume', (volume) => {
-        if (player && typeof player.setVolume === 'function') {
+        if (player && isPlayerReady) {
             player.setVolume(volume);
         }
     });
