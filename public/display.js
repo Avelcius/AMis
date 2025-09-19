@@ -49,7 +49,6 @@ document.addEventListener('DOMContentLoaded', () => {
             playerVars: {
                 'autoplay': 1,
                 'controls': 0,
-                'origin': window.location.origin,
                 'enablejsapi': 1
             },
             events: {
@@ -211,7 +210,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 playerVars: {
                     'autoplay': 1,
                     'controls': 0,
-                    'origin': window.location.origin,
                     'enablejsapi': 1
                 },
                 events: {
