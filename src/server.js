@@ -80,6 +80,11 @@ io.on('connection', (socket) => {
 
   socket.on('song-ended', playNextSong);
 
+  socket.on('player-state-change', (state) => {
+    // Broadcast the raw state to any client that cares (e.g., admin panel)
+    io.emit('admin-status-update', state);
+  });
+
   // Admin controls
   socket.on('admin-skip-song', playNextSong);
   socket.on('admin-remove-song', (songTimestamp) => {
@@ -91,6 +96,9 @@ io.on('connection', (socket) => {
   });
   socket.on('admin-set-volume', (volume) => {
     io.emit('player-set-volume', volume);
+  });
+  socket.on('admin-force-reload', () => {
+    io.emit('player-force-reload');
   });
 
   socket.on('disconnect', () => console.log('User disconnected:', socket.id));

@@ -14,6 +14,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const togglePauseBtn = document.getElementById('toggle-pause-button');
     const skipBtn = document.getElementById('skip-button');
     const volumeSlider = document.getElementById('volume-slider');
+    const playerStatusEl = document.getElementById('player-status');
+    const reloadDisplayBtn = document.getElementById('reload-display-button');
 
     const showAdminView = () => {
         loginView.classList.add('hidden');
@@ -84,11 +86,29 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    const playerStateMap = {
+        '-1': 'Не начато',
+        '0': 'Завершено',
+        '1': 'Воспроизведение',
+        '2': 'Пауза',
+        '3': 'Буферизация',
+        '5': 'Видео загружено'
+    };
+
+    socket.on('admin-status-update', (stateCode) => {
+        playerStatusEl.textContent = playerStateMap[stateCode] || 'Неизвестно';
+    });
+
     // --- Admin Actions ---
     togglePauseBtn.addEventListener('click', () => socket.emit('admin-toggle-pause'));
     skipBtn.addEventListener('click', () => socket.emit('admin-skip-song'));
     volumeSlider.addEventListener('input', (e) => {
         socket.emit('admin-set-volume', e.target.value);
+    });
+    reloadDisplayBtn.addEventListener('click', () => {
+        if (confirm('Вы уверены, что хотите перезагрузить страницу дисплея?')) {
+            socket.emit('admin-force-reload');
+        }
     });
 
     // --- Initial Check ---

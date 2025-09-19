@@ -72,6 +72,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function onPlayerStateChange(event) {
+        socket.emit('player-state-change', event.data); // Emit state to server
         if (event.data === YT.PlayerState.ENDED) {
             currentVideoId = null;
             socket.emit('song-ended');
@@ -174,6 +175,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (player && isPlayerReady) {
             player.setVolume(volume);
         }
+    });
+
+    socket.on('player-force-reload', () => {
+        window.location.reload();
     });
 
     // --- QR Code Generation ---
