@@ -60,7 +60,9 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     function onPlayerReady(event) {
-        console.log("YouTube Player is ready.");
+        console.log("YouTube Player is ready. Muting and playing to enable autoplay.");
+        event.target.mute();
+        event.target.playVideo();
         isPlayerReady = true;
         // If a song was received before the player was ready, play it now.
         if (pendingData) {
@@ -118,7 +120,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 artistEl.textContent = song.artist;
                 coverArtEl.crossOrigin = "Anonymous";
                 coverArtEl.src = song.coverArt || placeholderCover;
+
+                // Load, mute, and play to ensure autoplay works across browsers
                 player.loadVideoById(song.videoId);
+                player.mute();
+                player.playVideo();
+
                 startProgressTimer();
             }
         } else {
@@ -173,21 +180,50 @@ document.addEventListener('DOMContentLoaded', () => {
 
     socket.on('player-set-volume', (volume) => {
         if (player && isPlayerReady) {
+            // Unmute the player when volume is set, in case it was muted for autoplay
+            player.unMute();
             player.setVolume(volume);
         }
     });
 
     socket.on('player-force-reload', () => {
-        console.log("Force reloading player...");
+        console.log("Force re-initializing player...");
+
         if (player && typeof player.destroy === 'function') {
-            player.destroy();
+            try {
+                player.destroy();
+            } catch (e) {
+                console.error("Error destroying player:", e);
+            }
         }
+
         // Reset state variables
         player = null;
         isPlayerReady = false;
         currentVideoId = null;
-        // Re-run the API ready function to create a new player
-        onYouTubeIframeAPIReady();
+
+        // Re-create the player directly.
+        // The YouTube IFrame API script should already be loaded.
+        try {
+            player = new YT.Player('player', {
+                height: '195',
+                width: '320',
+                playerVars: {
+                    'autoplay': 1,
+                    'controls': 0,
+                    'origin': window.location.origin,
+                    'enablejsapi': 1
+                },
+                events: {
+                    'onReady': onPlayerReady,
+                    'onStateChange': onPlayerStateChange
+                }
+            });
+        } catch (e) {
+            console.error("Error re-creating player:", e);
+            // As a fallback, reload the page if the player can't be created.
+            window.location.reload();
+        }
     });
 
     // --- QR Code Generation ---

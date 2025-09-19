@@ -106,7 +106,7 @@ document.addEventListener('DOMContentLoaded', () => {
         socket.emit('admin-set-volume', e.target.value);
     });
     reloadDisplayBtn.addEventListener('click', () => {
-        if (confirm('Вы уверены, что хотите перезагрузить страницу дисплея?')) {
+        if (confirm('Вы уверены, что хотите переинициализировать плеер? Это может прервать текущий трек.')) {
             socket.emit('admin-force-reload');
         }
     });
