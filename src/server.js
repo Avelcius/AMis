@@ -89,6 +89,9 @@ io.on('connection', (socket) => {
   socket.on('admin-toggle-pause', () => {
     io.emit('player-control', { action: 'togglePause' });
   });
+  socket.on('admin-set-volume', (volume) => {
+    io.emit('player-set-volume', volume);
+  });
 
   socket.on('disconnect', () => console.log('User disconnected:', socket.id));
 });

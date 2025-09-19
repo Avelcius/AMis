@@ -129,6 +129,7 @@ button:hover {
     height: 100%;
     z-index: -1;
     background-color: #000;
+    transition: background-color 2s ease-in-out;
 }
 
 #display-layout {
@@ -287,4 +288,46 @@ button:hover {
     font-size: 0.8em;
     color: #b3b3b3;
     margin-top: 5px;
+}
+
+/* --- Controller Now Playing Bar --- */
+#now-playing-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background-color: #282828;
+    border-top: 1px solid #404040;
+    display: flex;
+    align-items: center;
+    padding: 10px 20px;
+    box-sizing: border-box;
+}
+
+#now-playing-bar.hidden {
+    display: none;
+}
+
+#now-playing-bar img {
+    width: 40px;
+    height: 40px;
+    margin-right: 15px;
+    border-radius: 4px;
+}
+
+#now-playing-bar .info {
+    color: #fff;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#now-playing-bar .info .title {
+    font-weight: bold;
+    font-size: 0.9em;
+}
+
+#now-playing-bar .info .artist {
+    font-size: 0.8em;
+    color: #b3b3b3;
 }

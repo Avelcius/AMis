@@ -1,6 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     const socket = io();
 
+    // --- DOM Elements ---
     const nicknameSection = document.getElementById('nickname-section');
     const searchSection = document.getElementById('search-section');
     const nicknameInput = document.getElementById('nickname-input');
@@ -8,6 +9,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const nicknameDisplay = document.getElementById('nickname-display');
     const searchInput = document.getElementById('search-input');
     const searchResultsContainer = document.getElementById('search-results');
+    const nowPlayingBar = document.getElementById('now-playing-bar');
+    const barCoverArt = document.getElementById('bar-cover-art');
+    const barTitle = document.getElementById('bar-title');
+    const barArtist = document.getElementById('bar-artist');
 
     let nickname = localStorage.getItem('nickname');
     let searchCache = {};
@@ -96,4 +101,16 @@ document.addEventListener('DOMContentLoaded', () => {
     searchInput.addEventListener('input', debounce((e) => {
         search(e.target.value.trim());
     }, 300));
+
+    // --- Now Playing Bar Logic ---
+    socket.on('queue-updated', ({ currentlyPlaying }) => {
+        if (currentlyPlaying) {
+            barCoverArt.src = currentlyPlaying.coverArt || 'https://via.placeholder.com/50';
+            barTitle.textContent = currentlyPlaying.title;
+            barArtist.textContent = currentlyPlaying.artist;
+            nowPlayingBar.classList.remove('hidden');
+        } else {
+            nowPlayingBar.classList.add('hidden');
+        }
+    });
 });

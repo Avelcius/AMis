@@ -13,6 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const queueListEl = document.getElementById('admin-queue-list');
     const togglePauseBtn = document.getElementById('toggle-pause-button');
     const skipBtn = document.getElementById('skip-button');
+    const volumeSlider = document.getElementById('volume-slider');
 
     const showAdminView = () => {
         loginView.classList.add('hidden');
@@ -86,6 +87,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Admin Actions ---
     togglePauseBtn.addEventListener('click', () => socket.emit('admin-toggle-pause'));
     skipBtn.addEventListener('click', () => socket.emit('admin-skip-song'));
+    volumeSlider.addEventListener('input', (e) => {
+        socket.emit('admin-set-volume', e.target.value);
+    });
 
     // --- Initial Check ---
     checkAuth();

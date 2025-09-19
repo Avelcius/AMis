@@ -12,11 +12,32 @@ document.addEventListener('DOMContentLoaded', () => {
     const progressBar = document.getElementById('progress-bar');
     const currentTimeEl = document.getElementById('current-time');
     const totalTimeEl = document.getElementById('total-time');
+    const visualizerCanvas = document.getElementById('visualizer-canvas');
 
     const placeholderCover = 'https://via.placeholder.com/300/121212/808080?text=+';
     let player;
     let progressTimer;
-    let currentVideoId = null; // State to track the current video
+    let currentVideoId = null;
+    const colorThief = new ColorThief();
+
+    // --- Dynamic Background ---
+    const updateBackgroundColor = () => {
+        if (coverArtEl.src === placeholderCover || !coverArtEl.complete) {
+            visualizerCanvas.style.backgroundColor = '#000';
+            return;
+        }
+        try {
+            const dominantColor = colorThief.getColor(coverArtEl);
+            // Make it darker for a background effect
+            const bgColor = `rgb(${dominantColor[0] * 0.4}, ${dominantColor[1] * 0.4}, ${dominantColor[2] * 0.4})`;
+            visualizerCanvas.style.backgroundColor = bgColor;
+        } catch (e) {
+            console.error("ColorThief error:", e);
+            visualizerCanvas.style.backgroundColor = '#000';
+        }
+    };
+    coverArtEl.addEventListener('load', updateBackgroundColor);
+
 
     // --- YouTube Player ---
     window.onYouTubeIframeAPIReady = () => {
@@ -27,7 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
             events: {
                 'onStateChange': (event) => {
                     if (event.data === YT.PlayerState.ENDED) {
-                        currentVideoId = null; // Reset when song ends
+                        currentVideoId = null;
                         socket.emit('song-ended');
                     }
                 }
@@ -67,26 +88,25 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- UI Update Functions ---
     const updateNowPlaying = (song) => {
         if (song && song.videoId) {
-            // *** BUG FIX: Only load video if the ID is different ***
+            addedByEl.textContent = `Добавил: ${song.addedBy || 'кто-то'}`;
             if (song.videoId !== currentVideoId) {
-                console.log(`Loading new video. Old: ${currentVideoId}, New: ${song.videoId}`);
                 currentVideoId = song.videoId;
                 titleEl.textContent = song.title;
                 artistEl.textContent = song.artist;
+                // Set crossOrigin to handle tainted canvas errors with ColorThief
+                coverArtEl.crossOrigin = "Anonymous";
                 coverArtEl.src = song.coverArt || placeholderCover;
                 player.loadVideoById(song.videoId);
-                startProgressTimer(); // Start timer for the new song
+                startProgressTimer();
             }
-            // Always update who added the song, even if the song is the same
-            addedByEl.textContent = `Добавил: ${song.addedBy || 'кто-то'}`;
         } else {
-            // No song is playing
             stopProgressTimer();
             currentVideoId = null;
             titleEl.textContent = 'Музыка не играет';
             artistEl.textContent = 'Добавьте песню с вашего устройства';
             addedByEl.textContent = '';
             coverArtEl.src = placeholderCover;
+            updateBackgroundColor(); // Reset to default
             if (player && typeof player.stopVideo === 'function') {
                 player.stopVideo();
             }
@@ -102,7 +122,7 @@ document.addEventListener('DOMContentLoaded', () => {
         queue.forEach(s => {
             const item = document.createElement('div');
             item.className = 'queue-item';
-            item.innerHTML = `<img src="${s.coverArt || placeholderCover}" alt="Art"><div class="info"><div class="title">${s.title}</div><div class="artist">${s.artist}</div></div>`;
+            item.innerHTML = `<img src="${s.coverArt || placeholderCover}" alt="Art"><div class="info"><div class="title">${s.title}</div><div class="artist">${s.artist} (добавил: ${s.addedBy || 'кто-то'})</div></div>`;
             queueListEl.appendChild(item);
         });
     };
@@ -119,6 +139,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const state = player.getPlayerState();
             if (state === YT.PlayerState.PLAYING) player.pauseVideo();
             else player.playVideo();
+        }
+    });
+
+    socket.on('player-set-volume', (volume) => {
+        if (player && typeof player.setVolume === 'function') {
+            player.setVolume(volume);
         }
     });
 
