@@ -178,7 +178,16 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     socket.on('player-force-reload', () => {
-        window.location.reload();
+        console.log("Force reloading player...");
+        if (player && typeof player.destroy === 'function') {
+            player.destroy();
+        }
+        // Reset state variables
+        player = null;
+        isPlayerReady = false;
+        currentVideoId = null;
+        // Re-run the API ready function to create a new player
+        onYouTubeIframeAPIReady();
     });
 
     // --- QR Code Generation ---
