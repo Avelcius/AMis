@@ -47,7 +47,6 @@ document.addEventListener('DOMContentLoaded', () => {
             height: '195',
             width: '320',
             playerVars: {
-                'autoplay': 1,
                 'controls': 0,
                 'enablejsapi': 1
             },
@@ -59,8 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     function onPlayerReady(event) {
-        console.log("YouTube Player is ready. Muting and playing to enable autoplay.");
-        event.target.mute();
+        console.log("YouTube Player is ready.");
         event.target.playVideo();
         isPlayerReady = true;
         // If a song was received before the player was ready, play it now.
@@ -120,9 +118,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 coverArtEl.crossOrigin = "Anonymous";
                 coverArtEl.src = song.coverArt || placeholderCover;
 
-                // Load, mute, and play to ensure autoplay works across browsers
+                // Load and play video
                 player.loadVideoById(song.videoId);
-                player.mute();
                 player.playVideo();
 
                 startProgressTimer();
@@ -179,8 +176,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     socket.on('player-set-volume', (volume) => {
         if (player && isPlayerReady) {
-            // Unmute the player when volume is set, in case it was muted for autoplay
-            player.unMute();
             player.setVolume(volume);
         }
     });
@@ -208,7 +203,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 height: '195',
                 width: '320',
                 playerVars: {
-                    'autoplay': 1,
                     'controls': 0,
                     'enablejsapi': 1
                 },
