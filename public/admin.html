@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Админ-панель</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <div class="container" id="admin-container">
+        <!-- Login View -->
+        <div id="login-view">
+            <h1>Вход для администратора</h1>
+            <input type="password" id="password-input" placeholder="Пароль" autocomplete="current-password">
+            <button id="login-button">Войти</button>
+            <p id="login-error" class="hidden" style="color: #f44336;"></p>
+        </div>
+
+        <!-- Main Admin View -->
+        <div id="admin-view" class="hidden">
+            <h1>Панель управления</h1>
+
+            <div id="admin-now-playing">
+                <h4>Сейчас играет:</h4>
+                <p id="admin-current-song">Ничего не играет</p>
+            </div>
+
+            <div id="admin-controls">
+                <button id="toggle-pause-button">Пауза / Плей</button>
+                <button id="skip-button">Пропустить трек</button>
+                <div style="margin-top: 10px;">
+                    <label for="volume-slider">Громкость:</label>
+                    <input type="range" id="volume-slider" min="0" max="100" value="100">
+                </div>
+            </div>
+
+            <div id="admin-queue">
+                <h4>Очередь:</h4>
+                <div id="admin-queue-list">
+                    <p class="empty-queue-message">Очередь пуста</p>
+                </div>
+            </div>
+
+            <div class="debug-section">
+                <h4>Debug Info</h4>
+                <p>Статус плеера: <b id="player-status">N/A</b></p>
+                <button id="reload-display-button">Перезагрузить Дисплей</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/admin.js"></script>
+</body>
+</html>

@@ -1,0 +1,32 @@
+{
+  "name": "app",
+  "version": "1.0.0",
+  "description": "the beta AMis",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Avelcius/AMis.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Avelcius/AMis/issues"
+  },
+  "homepage": "https://github.com/Avelcius/AMis#readme",
+  "dependencies": {
+    "dotenv": "^17.2.2",
+    "express": "^5.1.0",
+    "qrcode": "^1.5.4",
+    "socket.io": "^4.8.1",
+    "spotify-web-api-node": "^5.0.2",
+    "youtube-sr": "^4.3.12"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}

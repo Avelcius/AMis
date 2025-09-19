@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Party Jukebox - Display</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <canvas id="visualizer-canvas"></canvas>
+    <div id="display-layout">
+        <main id="main-content">
+            <div id="now-playing-card">
+                <img id="cover-art" src="https://via.placeholder.com/300/121212/808080?text=+" alt="Обложка альбома">
+                <div class="info">
+                    <h2 id="song-title">Музыка не играет</h2>
+                    <p id="song-artist">Добавьте песню с вашего устройства</p>
+                    <p id="song-added-by"></p>
+                    <div id="progress-container">
+                        <div id="progress-bar"></div>
+                    </div>
+                    <div id="time-container">
+                        <span id="current-time">0:00</span>
+                        <span id="total-time">0:00</span>
+                    </div>
+                </div>
+            </div>
+            <!-- The YouTube player will be here, but invisible -->
+            <div id="player-wrapper">
+                <div id="player"></div>
+            </div>
+        </main>
+        <aside id="sidebar">
+            <div id="qr-code-wrapper">
+                <h3>Добавить трек</h3>
+                <div id="qrcode"></div>
+                <p id="party-url"></p>
+            </div>
+            <div id="queue-wrapper">
+                <h3>Далее в очереди:</h3>
+                <div id="queue-list">
+                    <p class="empty-queue-message">Очередь пуста</p>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Libraries -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator/qrcode.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/color-thief/2.3.2/color-thief.umd.js"></script>
+    <script src="https://www.youtube.com/iframe_api"></script>
+
+    <!-- App Script -->
+    <script src="/display.js"></script>
+</body>
+</html>
