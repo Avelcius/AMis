@@ -43,6 +43,7 @@ const searchTracks = async (query) => {
       album: track.album.name,
       coverArt: track.album.images[0]?.url, // Get the largest image if available
       duration_ms: track.duration_ms,
+      explicit: track.explicit,
     }));
   } catch (err) {
     console.error('Something went wrong when searching tracks', err);

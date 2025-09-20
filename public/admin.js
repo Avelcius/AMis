@@ -9,7 +9,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const loginError = document.getElementById('login-error');
 
     // --- Admin Panel Elements ---
-    const nowPlayingEl = document.getElementById('admin-current-song');
+    const adminCoverArt = document.getElementById('admin-cover-art');
+    const adminSongTitle = document.getElementById('admin-song-title');
+    const adminSongArtist = document.getElementById('admin-song-artist');
     const queueListEl = document.getElementById('admin-queue-list');
     const togglePauseBtn = document.getElementById('toggle-pause-button');
     const skipBtn = document.getElementById('skip-button');
@@ -58,9 +60,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Socket Logic ---
     socket.on('queue-updated', ({ queue, currentlyPlaying }) => {
         if (currentlyPlaying) {
-            nowPlayingEl.textContent = `${currentlyPlaying.title} - ${currentlyPlaying.artist}`;
+            adminSongTitle.textContent = currentlyPlaying.title;
+            adminSongArtist.textContent = currentlyPlaying.artist;
+            adminCoverArt.src = currentlyPlaying.coverArt || 'https://via.placeholder.com/100/121212/808080?text=+';
         } else {
-            nowPlayingEl.textContent = 'Ничего не играет';
+            adminSongTitle.textContent = 'Ничего не играет';
+            adminSongArtist.textContent = 'Добавьте песню';
+            adminCoverArt.src = 'https://via.placeholder.com/100/121212/808080?text=+';
         }
 
         queueListEl.innerHTML = '';

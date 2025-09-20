@@ -260,6 +260,135 @@ button:hover {
     font-size: 0.8em;
     color: #b3b3b3;
 }
+
+/* --- Admin Panel Redesign --- */
+#admin-view {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.admin-card {
+    background-color: #282828;
+    padding: 20px;
+    border-radius: 8px;
+}
+
+#admin-now-playing {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+#admin-now-playing .info {
+    text-align: left;
+}
+
+#admin-now-playing .info h2 {
+    margin: 0 0 5px;
+    font-size: 1.2em;
+}
+
+#admin-now-playing .info p {
+    margin: 0;
+    text-align: left;
+    color: #b3b3b3;
+}
+
+#admin-now-playing .info .status {
+    margin-top: 10px;
+    font-size: 0.9em;
+    color: #888;
+}
+
+#admin-cover-art {
+    width: 100px;
+    height: 100px;
+    border-radius: 6px;
+    object-fit: cover;
+}
+
+#admin-controls .buttons {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+#admin-controls .buttons button {
+    flex-grow: 1; /* Make buttons share space */
+}
+
+#admin-controls .volume-control {
+    display: flex;
+    flex-direction: column;
+}
+
+#admin-controls .volume-control label {
+    margin-bottom: 10px;
+    font-size: 0.9em;
+    color: #b3b3b3;
+}
+
+#admin-queue .queue-item {
+    padding: 8px;
+    border-radius: 4px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#admin-queue .queue-item:nth-child(odd) {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+#admin-queue .queue-item .info {
+    text-align: left;
+}
+
+.danger-zone {
+    border: 1px solid #553030;
+    background-color: rgba(244, 67, 54, 0.1);
+}
+
+.danger-zone h3 {
+    color: #f44336;
+}
+
+.danger-btn {
+    background-color: #f44336;
+    transition: background-color 0.2s ease;
+}
+
+.danger-btn:hover {
+    background-color: #d32f2f;
+}
+
+#admin-queue-list .remove-btn {
+    background-color: #555;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background-color 0.2s ease;
+}
+
+#admin-queue-list .remove-btn:hover {
+    background-color: #f44336;
+}
+
+.explicit-tag {
+    display: inline-block;
+    background-color: #666;
+    color: #fff;
+    font-size: 0.7em;
+    font-weight: bold;
+    padding: 2px 4px;
+    border-radius: 3px;
+    margin-right: 5px;
+    vertical-align: middle;
+}
 .empty-queue-message {
     text-align: center;
     color: #888;
@@ -289,6 +418,29 @@ button:hover {
     color: #b3b3b3;
     margin-top: 5px;
 }
+
+/* --- Karaoke Styles --- */
+#karaoke-lyrics {
+    margin-top: 20px;
+    height: 80px; /* Reserve space to prevent layout shifts */
+    text-align: center;
+}
+
+.karaoke-line {
+    font-size: 1.4em;
+    font-weight: bold;
+    margin: 5px 0;
+    transition: all 0.3s ease-in-out;
+    opacity: 1;
+}
+
+.karaoke-line.next {
+    font-size: 1.1em;
+    font-weight: normal;
+    color: #b3b3b3;
+    opacity: 0.7;
+}
+
 
 /* --- Controller Now Playing Bar --- */
 #now-playing-bar {

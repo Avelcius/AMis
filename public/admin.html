@@ -5,21 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Админ-панель</title>
     <link rel="stylesheet" href="/style.css">
-    <style>
-        #admin-container button { margin-bottom: 10px; }
-        #admin-queue-list .queue-item { justify-content: space-between; }
-        #admin-queue-list .remove-btn {
-            background-color: #f44336;
-            color: white;
-            border: none;
-            padding: 5px 10px;
-            border-radius: 4px;
-            cursor: pointer;
-            flex-shrink: 0;
-        }
-        #admin-queue-list .remove-btn:hover { background-color: #d32f2f; }
-        #admin-current-song { font-style: italic; color: #b3b3b3; }
-    </style>
 </head>
 <body>
     <div class="container" id="admin-container">
@@ -28,36 +13,41 @@
             <h1>Вход для администратора</h1>
             <input type="password" id="password-input" placeholder="Пароль" autocomplete="current-password">
             <button id="login-button">Войти</button>
-            <p id="login-error" class="hidden" style="color: #f44336;"></p>
+            <p id="login-error" class="hidden"></p>
         </div>
 
         <!-- Main Admin View -->
         <div id="admin-view" class="hidden">
-            <h1>Панель управления</h1>
-
-            <div id="admin-now-playing">
-                <h4>Сейчас играет:</h4>
-                <p id="admin-current-song">Ничего не играет</p>
+            <div class="admin-card" id="admin-now-playing">
+                <img id="admin-cover-art" src="https://via.placeholder.com/100/121212/808080?text=+" alt="Обложка">
+                <div class="info">
+                    <h2 id="admin-song-title">Ничего не играет</h2>
+                    <p id="admin-song-artist">Добавьте песню</p>
+                    <p class="status">Статус плеера: <b id="player-status">N/A</b></p>
+                </div>
             </div>
 
-            <div id="admin-controls">
-                <button id="toggle-pause-button">Пауза / Плей</button>
-                <button id="skip-button">Пропустить трек</button>
-                <label for="volume-slider">Громкость:</label>
-                <input type="range" id="volume-slider" min="0" max="100" value="100">
+            <div class="admin-card" id="admin-controls">
+                 <div class="buttons">
+                    <button id="toggle-pause-button">Пауза/Плей</button>
+                    <button id="skip-button">Пропустить</button>
+                </div>
+                <div class="volume-control">
+                    <label for="volume-slider">Громкость</label>
+                    <input type="range" id="volume-slider" min="0" max="100" value="100">
+                </div>
             </div>
 
-            <div id="admin-queue">
-                <h4>Очередь:</h4>
+            <div class="admin-card" id="admin-queue">
+                <h3>Далее в очереди</h3>
                 <div id="admin-queue-list">
                     <p class="empty-queue-message">Очередь пуста</p>
                 </div>
             </div>
 
-            <div id="admin-debug">
-                <h4>Debug Info:</h4>
-                <p>Статус плеера: <b id="player-status">N/A</b></p>
-                <button id="reload-display-button">Переинициализировать плеер</button>
+            <div class="admin-card danger-zone">
+                <h3>Опасная зона</h3>
+                <button id="reload-display-button" class="danger-btn">Переинициализировать плеер</button>
             </div>
         </div>
     </div>

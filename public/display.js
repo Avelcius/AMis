@@ -13,11 +13,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const currentTimeEl = document.getElementById('current-time');
     const totalTimeEl = document.getElementById('total-time');
     const visualizerCanvas = document.getElementById('visualizer-canvas');
+    const karaokeContainerEl = document.getElementById('karaoke-lyrics');
+    const currentLineEl = document.getElementById('karaoke-line-current');
+    const nextLineEl = document.getElementById('karaoke-line-next');
+
 
     // --- State Variables ---
     const placeholderCover = 'https://via.placeholder.com/300/121212/808080?text=+';
     let player;
     let progressTimer;
+    let syncedLyrics = [];
+    let currentLyricIndex = -1;
     let currentVideoId = null;
     let isPlayerReady = false;
     let pendingData = null; // To hold data that arrives before player is ready
@@ -102,9 +108,51 @@ document.addEventListener('DOMContentLoaded', () => {
                     progressBar.style.width = `${(currentTime / duration) * 100}%`;
                     currentTimeEl.textContent = formatTime(currentTime);
                     totalTimeEl.textContent = formatTime(duration);
+                    updateKaraoke(currentTime);
                 }
             }
-        }, 1000);
+        }, 500); // Check more frequently for smoother karaoke
+    };
+
+    const updateKaraoke = (currentTime) => {
+        if (syncedLyrics.length === 0) return;
+
+        const timeInMs = currentTime * 1000;
+
+        // Find the index of the current lyric line
+        let newLyricIndex = -1;
+        for (let i = 0; i < syncedLyrics.length; i++) {
+            if (timeInMs >= syncedLyrics[i].timestamp) {
+                newLyricIndex = i;
+            } else {
+                break;
+            }
+        }
+
+        if (newLyricIndex !== currentLyricIndex) {
+            currentLyricIndex = newLyricIndex;
+            currentLineEl.textContent = syncedLyrics[currentLyricIndex]?.text || '';
+            nextLineEl.textContent = syncedLyrics[currentLyricIndex + 1]?.text || '';
+        }
+    };
+
+    const fetchAndProcessLyrics = async (song) => {
+        syncedLyrics = []; // Reset lyrics
+        currentLyricIndex = -1;
+        karaokeContainerEl.classList.add('hidden');
+
+        try {
+            const response = await fetch(`/lyrics?track_name=${encodeURIComponent(song.title)}&artist_name=${encodeURIComponent(song.artist)}`);
+            if (response.ok) {
+                const data = await response.json();
+                if (data.type === 'synced' && data.lyrics && data.lyrics.length > 0) {
+                    syncedLyrics = data.lyrics;
+                    karaokeContainerEl.classList.remove('hidden');
+                }
+            }
+        } catch (error) {
+            console.error("Could not fetch lyrics for karaoke:", error);
+        }
     };
 
     // --- UI Update Functions ---
@@ -122,11 +170,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 player.loadVideoById(song.videoId);
                 player.playVideo();
 
+                fetchAndProcessLyrics(song);
                 startProgressTimer();
             }
         } else {
             stopProgressTimer();
             currentVideoId = null;
+            syncedLyrics = []; // Clear lyrics when music stops
+            karaokeContainerEl.classList.add('hidden');
             titleEl.textContent = 'Музыка не играет';
             artistEl.textContent = 'Добавьте песню с вашего устройства';
             addedByEl.textContent = '';

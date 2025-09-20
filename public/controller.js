@@ -9,6 +9,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const nicknameDisplay = document.getElementById('nickname-display');
     const searchInput = document.getElementById('search-input');
     const searchResultsContainer = document.getElementById('search-results');
+    const lyricsDisplay = document.getElementById('lyrics-display');
+    const lyricsTitle = document.getElementById('lyrics-title');
+    const lyricsText = document.getElementById('lyrics-text');
     const nowPlayingBar = document.getElementById('now-playing-bar');
     const barCoverArt = document.getElementById('bar-cover-art');
     const barTitle = document.getElementById('bar-title');
@@ -36,6 +39,34 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    const fetchAndDisplayLyrics = async (track) => {
+        // Hide search results and clear input
+        searchResultsContainer.innerHTML = `<p><b>${track.title}</b> добавлена в очередь!</p>`;
+        searchInput.value = '';
+        lyricsDisplay.classList.add('hidden'); // Hide until we have lyrics
+
+        try {
+            const response = await fetch(`/lyrics?track_name=${encodeURIComponent(track.title)}&artist_name=${encodeURIComponent(track.artist)}`);
+
+            lyricsTitle.textContent = `Текст песни: ${track.title}`;
+            if (!response.ok) {
+                lyricsText.textContent = '(Текст не найден)';
+            } else {
+                const data = await response.json();
+                // We only care about unsynced lyrics on this page for now
+                if (data.lyrics) {
+                    lyricsText.textContent = data.lyrics;
+                } else {
+                    lyricsText.textContent = '(Текст не найден)';
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching lyrics:', error);
+            lyricsText.textContent = '(Ошибка при загрузке текста)';
+        }
+        lyricsDisplay.classList.remove('hidden');
+    };
+
     const renderResults = (tracks) => {
         searchResultsContainer.innerHTML = '';
         if (!tracks || tracks.length === 0) {
@@ -46,18 +77,18 @@ document.addEventListener('DOMContentLoaded', () => {
         tracks.forEach(track => {
             const trackEl = document.createElement('div');
             trackEl.className = 'search-result-item';
+            const explicitTag = track.explicit ? '<span class="explicit-tag">E</span>' : '';
             trackEl.innerHTML = `
                 <img src="${track.coverArt || 'https://via.placeholder.com/50'}" alt="Album Art">
                 <div class="info">
-                    <div class="title">${track.title}</div>
+                    <div class="title">${explicitTag}${track.title}</div>
                     <div class="artist">${track.artist}</div>
                 </div>
             `;
             trackEl.addEventListener('click', () => {
                 const songToAdd = { ...track, addedBy: nickname };
                 socket.emit('add-song', songToAdd);
-                searchResultsContainer.innerHTML = `<p><b>${track.title}</b> добавлена в очередь!</p>`;
-                searchInput.value = '';
+                fetchAndDisplayLyrics(track);
             });
             searchResultsContainer.appendChild(trackEl);
         });
@@ -74,6 +105,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const search = async (query) => {
+        lyricsDisplay.classList.add('hidden'); // Hide lyrics when starting a new search
         if (!query) {
             searchResultsContainer.innerHTML = '';
             return;

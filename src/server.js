@@ -5,6 +5,7 @@ const path = require('path');
 const { Server } = require("socket.io");
 const { searchTracks } = require('./spotify');
 const { findVideo } = require('./youtube');
+const { Client } = require('lrclib-api');
 
 const app = express();
 const server = http.createServer(app);
@@ -58,6 +59,38 @@ app.get('/search', async (req, res) => {
     res.json(tracks);
   } catch (error) {
     res.status(500).send({ error: 'Failed to search tracks.' });
+  }
+});
+
+app.get('/lyrics', async (req, res) => {
+  const { artist_name, track_name } = req.query;
+  if (!artist_name || !track_name) {
+    return res.status(400).send({ error: 'artist_name and track_name are required.' });
+  }
+
+  const client = new Client();
+  try {
+    // First, try to get synchronized lyrics
+    const synced = await client.getSynced({ artist_name, track_name });
+    if (synced && synced.length > 0) {
+      console.log(`Found synced lyrics for ${track_name}`);
+      return res.json({ type: 'synced', lyrics: synced });
+    }
+
+    // If not found, fall back to unsynchronized lyrics
+    const unsynced = await client.getUnsynced({ artist_name, track_name });
+    if (unsynced && unsynced.length > 0) {
+      console.log(`Found unsynced lyrics for ${track_name}`);
+      return res.json({ type: 'unsynced', lyrics: unsynced });
+    }
+
+    // If still nothing, return 404
+    console.log(`No lyrics found for ${track_name}`);
+    res.status(404).send({ error: 'Lyrics not found.' });
+
+  } catch (error) {
+    console.error('Error fetching lyrics:', error);
+    res.status(500).send({ error: 'Failed to fetch lyrics.' });
   }
 });
 
