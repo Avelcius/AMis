@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = await response.json();
                 if (data.type === 'synced' && data.lyrics) {
                     // Join synced lyrics into a single block of text
-                    lyricsText.textContent = data.lyrics.map(line => line.text).join('\\n');
+                    lyricsText.textContent = data.lyrics.map(line => line.text).join('\n');
                 } else if (data.type === 'unsynced' && data.lyrics) {
                     lyricsText.textContent = data.lyrics;
                 } else {

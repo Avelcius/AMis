@@ -12,11 +12,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const adminCoverArt = document.getElementById('admin-cover-art');
     const adminSongTitle = document.getElementById('admin-song-title');
     const adminSongArtist = document.getElementById('admin-song-artist');
+    const playerStatusEl = document.getElementById('player-status');
     const queueListEl = document.getElementById('admin-queue-list');
+    const queueWrapper = document.getElementById('admin-queue-wrapper');
+    const showMoreBtn = document.getElementById('show-more-queue-btn');
+    const fadeOverlay = document.getElementById('queue-fade-overlay');
     const togglePauseBtn = document.getElementById('toggle-pause-button');
     const skipBtn = document.getElementById('skip-button');
     const volumeSlider = document.getElementById('volume-slider');
     const reloadDisplayBtn = document.getElementById('reload-display-button');
+
+    let sortable = null;
 
     const showAdminView = () => {
         loginView.classList.add('hidden');
@@ -56,14 +62,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // --- Admin Panel Elements (New) ---
-    const queueWrapper = document.getElementById('admin-queue-wrapper');
-    const showMoreBtn = document.getElementById('show-more-queue-btn');
-    const fadeOverlay = document.getElementById('queue-fade-overlay');
-
-    // --- SortableJS ---
-    let sortable = null;
-
     // --- Socket Logic ---
     socket.on('queue-updated', ({ queue, currentlyPlaying }) => {
         if (currentlyPlaying) {
@@ -76,7 +74,6 @@ document.addEventListener('DOMContentLoaded', () => {
             adminCoverArt.src = 'https://via.placeholder.com/100/121212/808080?text=+';
         }
 
-        // Preserve scroll position
         const oldScrollTop = queueListEl.scrollTop;
         queueListEl.innerHTML = '';
 
@@ -84,21 +81,24 @@ document.addEventListener('DOMContentLoaded', () => {
             queueListEl.innerHTML = '<p class="empty-queue-message">Очередь пуста</p>';
             showMoreBtn.classList.add('hidden');
             fadeOverlay.classList.add('hidden');
+            queueWrapper.classList.remove('expanded');
             return;
         }
 
-        // Populate queue
         queue.forEach((song, index) => {
             const item = document.createElement('div');
             item.className = 'queue-item';
-            item.dataset.timestamp = song.timestamp; // Store timestamp for reordering
+            item.dataset.timestamp = song.timestamp;
 
             item.innerHTML = `
-                <span class="queue-handle">${index + 1}</span>
-                <img class="queue-art" src="${song.coverArt || 'https://via.placeholder.com/40'}" alt="Art">
-                <div class="info">
-                    <div class="title">${song.title}</div>
-                    <div class="artist">${song.artist} (добавил: ${song.addedBy || 'кто-то'})</div>
+                <div class="queue-item-left">
+                    <span class="queue-handle">⠿</span>
+                    <span class="queue-index">${index + 1}.</span>
+                    <img class="queue-art" src="${song.coverArt || 'https://via.placeholder.com/40'}" alt="Art">
+                    <div class="info">
+                        <div class="title">${song.title}</div>
+                        <div class="artist">${song.artist}</div>
+                    </div>
                 </div>
                 <button class="remove-btn">🗑️</button>
             `;
@@ -112,12 +112,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         queueListEl.scrollTop = oldScrollTop;
 
-        // "Show More" logic
         const needsShowMore = queueListEl.scrollHeight > queueWrapper.clientHeight;
-        showMoreBtn.classList.toggle('hidden', !needsShowMore);
-        fadeOverlay.classList.toggle('hidden', !needsShowMore || queueWrapper.classList.contains('expanded'));
+        const isExpanded = queueWrapper.classList.contains('expanded');
 
-        // Init SortableJS
+        showMoreBtn.classList.toggle('hidden', !needsShowMore || (isExpanded && queue.length <= 5));
+        fadeOverlay.classList.toggle('hidden', !needsShowMore || isExpanded);
+
+
         if (sortable) {
             sortable.destroy();
         }
@@ -131,6 +132,20 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    const playerStateMap = {
+        '-1': 'Не начато',
+        '0': 'Завершено',
+        '1': 'Воспроизведение',
+        '2': 'Пауза',
+        '3': 'Буферизация',
+        '5': 'Видео загружено'
+    };
+
+    socket.on('admin-status-update', (stateCode) => {
+        if(playerStatusEl) {
+            playerStatusEl.textContent = playerStateMap[stateCode] || 'Неизвестно';
+        }
+    });
 
     // --- Admin Actions ---
     togglePauseBtn.addEventListener('click', () => socket.emit('admin-toggle-pause'));
@@ -144,12 +159,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // --- Initial Check ---
-    checkAuth();
-
     showMoreBtn.addEventListener('click', () => {
         const isExpanded = queueWrapper.classList.toggle('expanded');
         showMoreBtn.textContent = isExpanded ? 'Скрыть' : 'Показать все';
         fadeOverlay.classList.toggle('hidden', isExpanded);
     });
+
+    // --- Initial Check ---
+    checkAuth();
 });
