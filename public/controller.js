@@ -53,8 +53,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 lyricsText.textContent = '(Текст не найден)';
             } else {
                 const data = await response.json();
-                // We only care about unsynced lyrics on this page for now
-                if (data.lyrics) {
+                if (data.type === 'synced' && data.lyrics) {
+                    // Join synced lyrics into a single block of text
+                    lyricsText.textContent = data.lyrics.map(line => line.text).join('\\n');
+                } else if (data.type === 'unsynced' && data.lyrics) {
                     lyricsText.textContent = data.lyrics;
                 } else {
                     lyricsText.textContent = '(Текст не найден)';

@@ -1,77 +1,105 @@
 from playwright.sync_api import sync_playwright, Page, expect
 import time
 
+def add_song_to_queue(page: Page, search_term: str):
+    print(f"Searching for '{search_term}'...")
+    search_input = page.get_by_placeholder("Поиск по названию или исполнителю...")
+    search_input.fill(search_term)
+
+    # Wait for search results to appear and click the first one
+    first_result = page.locator(".search-result-item").first
+    expect(first_result).to_be_visible(timeout=10000)
+    first_result.click()
+
+    # Wait for the confirmation/lyrics to show
+    expect(page.locator("#lyrics-display")).not_to_be_hidden(timeout=10000)
+    print(f"Added '{search_term}' to queue.")
+
 def run_verification(page: Page):
     base_url = "http://localhost:3000"
 
-    # --- 1. Verify Admin Panel Redesign ---
-    print("Navigating to admin panel...")
+    # --- 1. Add some songs to the queue first ---
+    print("Navigating to controller to add songs...")
+    page.goto(base_url)
+
+    # Set nickname
+    page.get_by_placeholder("Введите ваш никнейм").fill("Jules")
+    page.get_by_role("button", name="Войти").click()
+    expect(page.locator("#search-section")).not_to_be_hidden()
+
+    # Add 6 songs to test the "show more" feature
+    songs_to_add = ["God's Plan Drake", "Blinding Lights The Weeknd", "Shape of You Ed Sheeran", "Bohemian Rhapsody Queen", "Hotel California Eagles", "Stairway to Heaven Led Zeppelin"]
+    for song in songs_to_add:
+        add_song_to_queue(page, song)
+        # Brief pause to allow next search
+        time.sleep(0.5)
+
+    # --- 2. Verify Admin Panel Redesign and Functionality ---
+    print("\nNavigating to admin panel for verification...")
     page.goto(f"{base_url}/admin")
 
     print("Logging in...")
     page.get_by_placeholder("Пароль").fill("password")
     page.get_by_role("button", name="Войти").click()
 
-    print("Waiting for admin view to be visible...")
     admin_view = page.locator("#admin-view")
     expect(admin_view).to_be_visible(timeout=5000)
+    print("Login successful, admin view is visible.")
 
-    print("Taking screenshot of the new admin panel...")
-    page.screenshot(path="jules-scratch/verification/admin_panel.png")
+    # Let the queue populate
+    expect(page.locator("#admin-queue-list .queue-item")).to_have_count(6, timeout=5000)
+    print("Queue has been populated with 6 songs.")
 
-    # --- 2. Verify Explicit Tag and Static Lyrics ---
-    print("Navigating to controller page...")
-    page.goto(base_url)
+    print("Taking screenshot of the redesigned admin panel...")
+    page.screenshot(path="jules-scratch/verification/admin_panel_redesign.png")
 
-    print("Setting nickname...")
-    page.get_by_placeholder("Введите ваш никнейм").fill("Jules")
-    page.get_by_role("button", name="Войти").click()
+    # Verify "Show More" button
+    print("Verifying 'Show More' button...")
+    show_more_btn = page.locator("#show-more-queue-btn")
+    expect(show_more_btn).not_to_be_hidden()
+    expect(show_more_btn).to_have_text("Показать все")
+    show_more_btn.click()
+    expect(page.locator("#admin-queue-wrapper")).to_have_class("expanded")
+    expect(show_more_btn).to_have_text("Скрыть")
+    page.screenshot(path="jules-scratch/verification/admin_queue_expanded.png")
 
-    print("Searching for a song...")
-    search_input = page.get_by_placeholder("Поиск по названию или исполнителю...")
-    expect(search_input).to_be_visible()
-    # Using a song very likely to be explicit and have lyrics
-    search_input.fill("WAP cardi b")
+    # Verify Drag and Drop
+    print("Verifying drag-and-drop reordering...")
+    first_item = page.locator(".queue-item").nth(0)
+    third_item = page.locator(".queue-item").nth(2)
 
-    print("Waiting for search results...")
-    # Wait for the explicit tag to appear
-    explicit_tag = page.locator(".explicit-tag").first
-    expect(explicit_tag).to_be_visible(timeout=10000)
-    expect(explicit_tag).to_have_text("E")
+    initial_first_item_text = first_item.inner_text()
 
-    print("Taking screenshot of search results with explicit tag...")
-    page.screenshot(path="jules-scratch/verification/explicit_tag.png")
+    # Drag the first item to the position of the third item
+    first_item_handle = first_item.locator(".queue-handle")
+    third_item_handle = third_item.locator(".queue-handle")
 
-    print("Adding song to queue...")
-    page.locator(".search-result-item").first.click()
+    first_item_handle.drag_to(third_item_handle)
 
-    print("Waiting for static lyrics to appear...")
-    lyrics_display = page.locator("#lyrics-display")
-    expect(lyrics_display).not_to_be_hidden(timeout=10000)
-    lyrics_text = page.locator("#lyrics-text")
-    # Wait for lyrics text to be non-empty
-    expect(lyrics_text).not_to_be_empty(timeout=15000)
+    # Give a moment for the socket event to be processed
+    time.sleep(1)
 
-    print("Taking screenshot of static lyrics...")
-    page.screenshot(path="jules-scratch/verification/static_lyrics.png")
+    # Verify the item has moved
+    new_second_item = page.locator(".queue-item").nth(1)
+    expect(new_second_item).to_have_text(initial_first_item_text)
+    print("Drag and drop successful.")
+    page.screenshot(path="jules-scratch/verification/admin_drag_drop.png")
 
-    # --- 3. Verify Karaoke Lyrics on Display Page ---
-    print("Navigating to display page...")
-    page.goto(f"{base_url}/display")
+    # Verify Delete with Confirmation
+    print("Verifying delete with confirmation...")
 
-    print("Waiting for karaoke lyrics to appear...")
-    karaoke_container = page.locator("#karaoke-lyrics")
-    # The song from the other page should be playing
-    expect(karaoke_container).not_to_be_hidden(timeout=15000)
+    # Set up a dialog handler to automatically accept the confirmation
+    page.once("dialog", lambda dialog: dialog.accept())
 
-    # Wait for a few seconds to let some lyrics pass
-    print("Waiting for karaoke to progress...")
-    time.sleep(5)
+    # Click the delete button on the new first item
+    page.locator(".queue-item").first.locator(".remove-btn").click()
 
-    print("Taking screenshot of karaoke lyrics...")
-    page.screenshot(path="jules-scratch/verification/karaoke_lyrics.png")
+    # The queue should now have 5 items
+    expect(page.locator("#admin-queue-list .queue-item")).to_have_count(5, timeout=5000)
+    print("Delete with confirmation successful.")
+    page.screenshot(path="jules-scratch/verification/admin_delete.png")
 
-    print("Verification script completed successfully!")
+    print("\nVerification script completed successfully!")
 
 
 def main():

@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Админ-панель</title>
     <link rel="stylesheet" href="/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 </head>
 <body>
     <div class="container" id="admin-container">
@@ -23,7 +24,6 @@
                 <div class="info">
                     <h2 id="admin-song-title">Ничего не играет</h2>
                     <p id="admin-song-artist">Добавьте песню</p>
-                    <p class="status">Статус плеера: <b id="player-status">N/A</b></p>
                 </div>
             </div>
 
@@ -40,9 +40,13 @@
 
             <div class="admin-card" id="admin-queue">
                 <h3>Далее в очереди</h3>
-                <div id="admin-queue-list">
-                    <p class="empty-queue-message">Очередь пуста</p>
+                <div id="admin-queue-wrapper">
+                    <div id="admin-queue-list">
+                        <p class="empty-queue-message">Очередь пуста</p>
+                    </div>
+                    <div class="fade-out-overlay hidden" id="queue-fade-overlay"></div>
                 </div>
+                <button id="show-more-queue-btn" class="hidden">Показать все</button>
             </div>
 
             <div class="admin-card danger-zone">
