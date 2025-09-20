@@ -53,8 +53,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 lyricsText.textContent = '(Текст не найден)';
             } else {
                 const data = await response.json();
-                if (data.type === 'synced' && data.lyrics) {
-                    // Join synced lyrics into a single block of text
+                if (data.type === 'synced' && data.lyrics && data.lyrics.length > 0) {
+                    // Join synced lyrics into a single block of text for static display
                     lyricsText.textContent = data.lyrics.map(line => line.text).join('\n');
                 } else if (data.type === 'unsynced' && data.lyrics) {
                     lyricsText.textContent = data.lyrics;

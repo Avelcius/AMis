@@ -17,7 +17,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const currentLineEl = document.getElementById('karaoke-line-current');
     const nextLineEl = document.getElementById('karaoke-line-next');
 
-
     // --- State Variables ---
     const placeholderCover = 'https://via.placeholder.com/300/121212/808080?text=+';
     let player;
@@ -26,7 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentLyricIndex = -1;
     let currentVideoId = null;
     let isPlayerReady = false;
-    let pendingData = null; // To hold data that arrives before player is ready
+    let pendingData = null;
     const colorThief = new ColorThief();
 
     // --- Dynamic Background ---
@@ -46,16 +45,12 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     coverArtEl.addEventListener('load', updateBackgroundColor);
 
-
     // --- YouTube Player ---
     window.onYouTubeIframeAPIReady = () => {
         player = new YT.Player('player', {
             height: '195',
             width: '320',
-            playerVars: {
-                'controls': 0,
-                'enablejsapi': 1
-            },
+            playerVars: { 'controls': 0, 'enablejsapi': 1 },
             events: {
                 'onReady': onPlayerReady,
                 'onStateChange': onPlayerStateChange
@@ -65,9 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function onPlayerReady(event) {
         console.log("YouTube Player is ready.");
-        event.target.playVideo();
         isPlayerReady = true;
-        // If a song was received before the player was ready, play it now.
         if (pendingData) {
             console.log("Playing pending song.");
             updateNowPlaying(pendingData.currentlyPlaying);
@@ -77,14 +70,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function onPlayerStateChange(event) {
-        socket.emit('player-state-change', event.data); // Emit state to server
+        socket.emit('player-state-change', event.data);
+        if (event.data === YT.PlayerState.PLAYING) {
+            startProgressTimer();
+        } else {
+            clearInterval(progressTimer);
+        }
         if (event.data === YT.PlayerState.ENDED) {
             currentVideoId = null;
             socket.emit('song-ended');
         }
     }
 
-    // --- Progress Bar & Time Formatting ---
+    // --- Karaoke and Progress ---
     const formatTime = (seconds) => {
         const min = Math.floor(seconds / 60);
         const sec = Math.floor(seconds % 60).toString().padStart(2, '0');
@@ -98,10 +96,26 @@ document.addEventListener('DOMContentLoaded', () => {
         totalTimeEl.textContent = '0:00';
     };
 
+    const updateKaraoke = (currentTime) => {
+        if (!syncedLyrics || syncedLyrics.length === 0) return;
+
+        const timeInMs = currentTime * 1000;
+        const newLyricIndex = syncedLyrics.findIndex((line, index) => {
+            const nextLine = syncedLyrics[index + 1];
+            return timeInMs >= line.timestamp && (!nextLine || timeInMs < nextLine.timestamp);
+        });
+
+        if (newLyricIndex !== -1 && newLyricIndex !== currentLyricIndex) {
+            currentLyricIndex = newLyricIndex;
+            currentLineEl.textContent = syncedLyrics[currentLyricIndex]?.text || '';
+            nextLineEl.textContent = syncedLyrics[currentLyricIndex + 1]?.text || '';
+        }
+    };
+
     const startProgressTimer = () => {
         stopProgressTimer();
         progressTimer = setInterval(() => {
-            if (player && typeof player.getCurrentTime === 'function') {
+            if (player && typeof player.getCurrentTime === 'function' && typeof player.getDuration === 'function') {
                 const currentTime = player.getCurrentTime();
                 const duration = player.getDuration();
                 if (duration > 0) {
@@ -111,43 +125,26 @@ document.addEventListener('DOMContentLoaded', () => {
                     updateKaraoke(currentTime);
                 }
             }
-        }, 500); // Check more frequently for smoother karaoke
-    };
-
-    const updateKaraoke = (currentTime) => {
-        if (syncedLyrics.length === 0) return;
-
-        const timeInMs = currentTime * 1000;
-
-        // Find the index of the current lyric line
-        let newLyricIndex = -1;
-        for (let i = 0; i < syncedLyrics.length; i++) {
-            if (timeInMs >= syncedLyrics[i].timestamp) {
-                newLyricIndex = i;
-            } else {
-                break;
-            }
-        }
-
-        if (newLyricIndex !== currentLyricIndex) {
-            currentLyricIndex = newLyricIndex;
-            currentLineEl.textContent = syncedLyrics[currentLyricIndex]?.text || '';
-            nextLineEl.textContent = syncedLyrics[currentLyricIndex + 1]?.text || '';
-        }
+        }, 250); // Check more frequently for smoother karaoke
     };
 
     const fetchAndProcessLyrics = async (song) => {
-        syncedLyrics = []; // Reset lyrics
+        syncedLyrics = [];
         currentLyricIndex = -1;
         karaokeContainerEl.classList.add('hidden');
+        currentLineEl.textContent = '';
+        nextLineEl.textContent = '';
 
         try {
             const response = await fetch(`/lyrics?track_name=${encodeURIComponent(song.title)}&artist_name=${encodeURIComponent(song.artist)}`);
             if (response.ok) {
                 const data = await response.json();
                 if (data.type === 'synced' && data.lyrics && data.lyrics.length > 0) {
+                    console.log("Synced lyrics found, preparing for karaoke.");
                     syncedLyrics = data.lyrics;
                     karaokeContainerEl.classList.remove('hidden');
+                } else {
+                     console.log("No synced lyrics found for this track.");
                 }
             }
         } catch (error) {
@@ -155,7 +152,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // --- UI Update Functions ---
+    // --- Main UI Update Functions ---
     const updateNowPlaying = (song) => {
         if (song && song.videoId) {
             addedByEl.textContent = `Добавил: ${song.addedBy || 'кто-то'}`;
@@ -166,17 +163,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 coverArtEl.crossOrigin = "Anonymous";
                 coverArtEl.src = song.coverArt || placeholderCover;
 
-                // Load and play video
                 player.loadVideoById(song.videoId);
-                player.playVideo();
 
                 fetchAndProcessLyrics(song);
-                startProgressTimer();
             }
         } else {
             stopProgressTimer();
             currentVideoId = null;
-            syncedLyrics = []; // Clear lyrics when music stops
+            syncedLyrics = [];
             karaokeContainerEl.classList.add('hidden');
             titleEl.textContent = 'Музыка не играет';
             artistEl.textContent = 'Добавьте песню с вашего устройства';
@@ -208,7 +202,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!isPlayerReady) {
             console.log("Player not ready, queueing data.");
             pendingData = data;
-            // Still update the queue list visually even if the player isn't ready
             updateQueue(data.queue);
         } else {
             updateNowPlaying(data.currentlyPlaying);
@@ -233,7 +226,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     socket.on('player-force-reload', () => {
         console.log("Force re-initializing player...");
-
         if (player && typeof player.destroy === 'function') {
             try {
                 player.destroy();
@@ -241,32 +233,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.error("Error destroying player:", e);
             }
         }
-
-        // Reset state variables
         player = null;
         isPlayerReady = false;
         currentVideoId = null;
-
-        // Re-create the player directly.
-        // The YouTube IFrame API script should already be loaded.
-        try {
-            player = new YT.Player('player', {
-                height: '195',
-                width: '320',
-                playerVars: {
-                    'controls': 0,
-                    'enablejsapi': 1
-                },
-                events: {
-                    'onReady': onPlayerReady,
-                    'onStateChange': onPlayerStateChange
-                }
-            });
-        } catch (e) {
-            console.error("Error re-creating player:", e);
-            // As a fallback, reload the page if the player can't be created.
-            window.location.reload();
-        }
+        onYouTubeIframeAPIReady();
     });
 
     // --- QR Code Generation ---
@@ -282,7 +252,7 @@ document.addEventListener('DOMContentLoaded', () => {
         qrCodeEl.innerHTML = "Ошибка";
     }
 
-    // --- Particle Visualizer (Placeholder) ---
+    // --- Particle Visualizer ---
     const canvas = document.getElementById('visualizer-canvas');
     const ctx = canvas.getContext('2d');
     canvas.width = window.innerWidth;
