@@ -345,6 +345,44 @@ button:hover {
     text-align: left;
     margin-left: 10px;
     flex-grow: 1;
+    overflow: hidden;
+}
+
+#admin-queue .queue-item-left {
+    display: flex;
+    align-items: center;
+    flex-grow: 1;
+    min-width: 0; /* Prevents the container from shrinking when title is long */
+}
+
+#admin-queue .queue-handle {
+    cursor: grab;
+    padding: 0 10px;
+    color: #888;
+    font-size: 1.5em;
+    line-height: 1;
+}
+
+#admin-queue .queue-art {
+    width: 40px;
+    height: 40px;
+    border-radius: 4px;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+#admin-queue .remove-btn {
+    background: none;
+    border: none;
+    color: #888;
+    font-size: 1.2em;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+#admin-queue .remove-btn:hover {
+    color: #f44336;
+    background: none;
 }
 
 .queue-handle {

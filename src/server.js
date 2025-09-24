@@ -134,6 +134,14 @@ io.on('connection', (socket) => {
     io.emit('player-force-reload');
   });
 
+  socket.on('admin-toggle-karaoke', () => {
+    io.emit('player-toggle-karaoke');
+  });
+
+  socket.on('get-current-song', () => {
+    socket.emit('queue-updated', { queue, currentlyPlaying });
+  });
+
   socket.on('admin-reorder-queue', (newOrder) => {
     // Create a map for quick lookups
     const queueMap = new Map(queue.map(song => [song.timestamp, song]));

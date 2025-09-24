@@ -159,6 +159,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    document.getElementById('toggle-karaoke-btn').addEventListener('click', () => {
+        socket.emit('admin-toggle-karaoke');
+    });
+
     showMoreBtn.addEventListener('click', () => {
         const isExpanded = queueWrapper.classList.toggle('expanded');
         showMoreBtn.textContent = isExpanded ? 'Скрыть' : 'Показать все';

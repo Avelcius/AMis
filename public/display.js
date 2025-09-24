@@ -26,6 +26,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentVideoId = null;
     let isPlayerReady = false;
     let pendingData = null;
+    let karaokeEnabled = true; // Karaoke is on by default
+    let currentSong = null;
     const colorThief = new ColorThief();
 
     // --- Dynamic Background ---
@@ -62,7 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log("YouTube Player is ready.");
         isPlayerReady = true;
         if (pendingData) {
-            console.log("Playing pending song.");
+            console.log("Playing pending song from onPlayerReady.");
             updateNowPlaying(pendingData.currentlyPlaying);
             updateQueue(pendingData.queue);
             pendingData = null;
@@ -97,7 +99,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const updateKaraoke = (currentTime) => {
-        if (!syncedLyrics || syncedLyrics.length === 0) return;
+        if (!karaokeEnabled || !syncedLyrics || syncedLyrics.length === 0) return;
 
         const timeInMs = currentTime * 1000;
         const newLyricIndex = syncedLyrics.findIndex((line, index) => {
@@ -125,7 +127,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     updateKaraoke(currentTime);
                 }
             }
-        }, 250); // Check more frequently for smoother karaoke
+        }, 250);
     };
 
     const fetchAndProcessLyrics = async (song) => {
@@ -135,13 +137,15 @@ document.addEventListener('DOMContentLoaded', () => {
         currentLineEl.textContent = '';
         nextLineEl.textContent = '';
 
+        if (!karaokeEnabled || !song) return;
+
         try {
             const response = await fetch(`/lyrics?track_name=${encodeURIComponent(song.title)}&artist_name=${encodeURIComponent(song.artist)}`);
             if (response.ok) {
                 const data = await response.json();
                 if (data.type === 'synced' && data.lyrics && data.lyrics.length > 0) {
                     console.log("Synced lyrics found, preparing for karaoke.");
-                    syncedLyrics = data.lyrics;
+                    syncedLyrics = data.lyrics.map(line => ({ ...line, timestamp: parseFloat(line.timestamp) }));
                     karaokeContainerEl.classList.remove('hidden');
                 } else {
                      console.log("No synced lyrics found for this track.");
@@ -154,6 +158,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Main UI Update Functions ---
     const updateNowPlaying = (song) => {
+        currentSong = song; // Keep track of the current song object
         if (song && song.videoId) {
             addedByEl.textContent = `Добавил: ${song.addedBy || 'кто-то'}`;
             if (song.videoId !== currentVideoId) {
@@ -164,6 +169,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 coverArtEl.src = song.coverArt || placeholderCover;
 
                 player.loadVideoById(song.videoId);
+                player.playVideo();
 
                 fetchAndProcessLyrics(song);
             }
@@ -216,6 +222,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if (state === YT.PlayerState.PLAYING) player.pauseVideo();
             else player.playVideo();
         }
+    });
+
+    socket.on('player-toggle-karaoke', () => {
+        karaokeEnabled = !karaokeEnabled;
+        console.log(`Karaoke toggled: ${karaokeEnabled}`);
+        // Re-process lyrics for current song to show/hide karaoke
+        fetchAndProcessLyrics(currentSong);
     });
 
     socket.on('player-set-volume', (volume) => {
